@@ -29,6 +29,11 @@ span {
   user-select: none;
 }
 
+
+#down:not(:checked) ~ span { /* lol */
+  display: none;
+}
+
 .state-paused {
   opacity: .5;
 }
@@ -79,11 +84,12 @@ function renderTime(t) {
 }
 
 
-let startTime = 2.0;
-let time = startTime;
+let downStartTime = 60.0;
+let time;
 let state = 'paused';
 let timer;
 let header;
+let timebox;
 let lastUpdate;
 let up = false;
 
@@ -130,7 +136,7 @@ function reset() {
   if (up) {
     time = 0;
   } else {
-    time = startTime;
+    time = downStartTime;
   }
   drawTime();
   setState('paused');
@@ -147,10 +153,24 @@ function clickH() {
 }
 
 function keyH(e) {
+  if (e.target === timebox) {
+    if (e.key === 'Enter') timebox.blur();
+    return;
+  }
   if (e.key === 'r') {
     reset();
   } else if (e.key === ' ') {
     clickH();
+  }
+}
+
+function timeH(e) {
+  let v = timebox.value;
+  if (v === '') return;
+  let newTime = parseInput(v);
+  if (!Number.isNaN(newTime)) {
+    downStartTime = newTime;
+    reset();
   }
 }
 
@@ -161,10 +181,13 @@ function setDirection(dir) {
 
 addEventListener('load', () => {
   timer = document.querySelector('#timer');
-  timer.textContent = renderTime(time);
-  timer.addEventListener('click', clickH);
+  document.querySelector('.aligner').addEventListener('click', clickH);
 
   header = document.querySelector('.info');
+  timebox = document.querySelector('#timebox');
+
+  timebox.addEventListener('change', timeH);
+  timebox.value = renderTime(downStartTime);
   
   window.addEventListener('keypress', keyH);
 
@@ -175,6 +198,8 @@ addEventListener('load', () => {
   document.querySelector('#down').addEventListener('click', () => {
     setDirection('down');
   });
+
+  reset();
 });
 </script>
 </head>
@@ -189,12 +214,13 @@ addEventListener('load', () => {
     <input type="radio" id="up" name="direction" value="up">
     <label for="up">Up</label>
     <input type="radio" id="down" name="direction" value="down" checked>
-    <label for="down">Down</label> <span style='width: 10em'></span>
+    <label for="down">Down</label> <span style='width: 10em'>
+
+    <span>
+      Time: <input id="timebox" size=7>
+    </span>
   </span>
 
-  <span>
-    Time: <input id="time" size=7>
-  </span>
 </div>
 
 <div class="aligner">
