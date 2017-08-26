@@ -1,0 +1,205 @@
+<html>
+<head>
+<title>Timer</title>
+<style>
+
+span {
+  margin: .5em;
+}
+
+.info {
+  position: relative;
+  z-index: 2;
+}
+
+.aligner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 80%;
+  margin-top: 1em;
+}
+
+#timer {
+  width: 100%;
+  flex: none;
+  font-size: 20vw;
+  text-align: center;
+  user-select: none;
+}
+
+.state-paused {
+  opacity: .5;
+}
+
+.state-done {
+  animation: blink 1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+}
+
+</style>
+
+<script>
+'use strict';
+
+// TODO save state
+
+function integral(n) {
+  return Math.floor(n) === n;
+}
+
+function parseInput(v) {
+  let times = v.split(':').reverse();
+  if (times.length > 3) return NaN;
+  let seconds = +times[0];
+  if (!integral(seconds)) return NaN;
+  let minutes = +(times[1] || '');
+  if (!integral(minutes)) return NaN;
+  let hours = +(times[2] || '');
+  if (!integral(hours)) return NaN;
+  return seconds + 60 * minutes + 3600 * hours;
+}
+
+function renderTime(t) {
+  t = Math.max(0, Math.ceil(t));
+  let seconds = ('' + (t % 60)).padStart(2, '0');
+  let minutes = ('' + (Math.floor(t / 60) % 60)).padStart(2, '0');
+  let hours = '' + Math.floor(t / 3600);
+  if (hours === '0') return minutes + ':' + seconds;
+  return hours + ':' + minutes + ':' + seconds;
+}
+
+
+let startTime = 2.0;
+let time = startTime;
+let state = 'paused';
+let timer;
+let header;
+let lastUpdate;
+let up = false;
+
+function drawTime(t = time) {
+  timer.textContent = renderTime(t);
+}
+
+function tick() {
+  if (state !== 'running') return;
+  let now = Date.now();
+  let delta = (now - lastUpdate) / 1000;
+  lastUpdate = now;
+
+  let newTime = time + (up ? delta : -delta);
+  if (Math.ceil(newTime) !== Math.ceil(time)) {
+    drawTime(newTime);
+  }
+  time = newTime;
+
+  if (time < 0) {
+    time = 0;
+    setState('done');
+    return;
+  }
+
+  requestAnimationFrame(tick);
+}
+
+
+function setState(newState) {
+  if (state === newState) return;
+  state = newState;
+  timer.className = 'state-' + state;
+  if (state === 'running') {
+    header.style.visibility = 'hidden';
+    lastUpdate = Date.now();
+    tick();
+  } else {
+    header.style.visibility = '';
+  }
+}
+
+function reset() {
+  if (up) {
+    time = 0;
+  } else {
+    time = startTime;
+  }
+  drawTime();
+  setState('paused');
+}
+
+function clickH() {
+  if (state === 'paused') {
+    setState('running');
+  } else if (state === 'running') {
+    setState('paused');
+  } else if (state === 'done') {
+    reset();
+  }
+}
+
+function keyH(e) {
+  if (e.key === 'r') {
+    reset();
+  } else if (e.key === ' ') {
+    clickH();
+  }
+}
+
+function setDirection(dir) {
+  up = dir === 'up';
+  reset();
+}
+
+addEventListener('load', () => {
+  timer = document.querySelector('#timer');
+  timer.textContent = renderTime(time);
+  timer.addEventListener('click', clickH);
+
+  header = document.querySelector('.info');
+  
+  window.addEventListener('keypress', keyH);
+
+  document.querySelector('#up').addEventListener('click', () => {
+    setDirection('up');
+  });
+
+  document.querySelector('#down').addEventListener('click', () => {
+    setDirection('down');
+  });
+});
+</script>
+</head>
+<body>
+
+<div class="info">
+  <span>
+    Show a clock. Space/click to toggle, r to reset.
+  </span>
+
+  <span>
+    <input type="radio" id="up" name="direction" value="up">
+    <label for="up">Up</label>
+    <input type="radio" id="down" name="direction" value="down" checked>
+    <label for="down">Down</label> <span style='width: 10em'></span>
+  </span>
+
+  <span>
+    Time: <input id="time" size=7>
+  </span>
+</div>
+
+<div class="aligner">
+  <div id="timer" class="state-paused"></div>
+</div>
+
+</body>
+</html>
