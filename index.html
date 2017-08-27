@@ -130,6 +130,12 @@ function setState(newState) {
   } else {
     header.style.visibility = '';
   }
+
+  if (state === 'done') {
+    startBeep();
+  } else {
+    stopBeep();
+  }
 }
 
 function reset() {
@@ -140,6 +146,40 @@ function reset() {
   }
   drawTime();
   setState('paused');
+}
+
+let context = new AudioContext();
+
+let src = context.createOscillator();
+src.frequency.value = 440;
+
+// modulator to turn beeps on and off
+let mod = context.createOscillator();
+mod.type = 'square';
+mod.frequency.value = 4; // Hz
+
+let gain = context.createGain();
+let scaler = context.createGain();
+
+src.connect(gain);
+gain.connect(context.destination);
+
+mod.connect(scaler); // Mod signal is [-1,1]
+scaler.gain.value = 0.5; // we need it to be [-0.5,0.5]
+gain.gain.value = 0.5; // then it's summed with 0.5, so [0,1]
+scaler.connect(gain.gain);
+
+src.start(0);
+mod.start(0);
+context.suspend();
+
+function startBeep() {
+  context.resume();
+  setTimeout(stopBeep, 10000);
+}
+
+function stopBeep() {
+  context.suspend();
 }
 
 function clickH() {
