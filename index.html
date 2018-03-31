@@ -56,7 +56,7 @@ span {
 <script>
 'use strict';
 
-// TODO save state
+let downTimerKey = 'last timer down';
 
 function integral(n) {
   return Math.floor(n) === n;
@@ -83,8 +83,11 @@ function renderTime(t) {
   return hours + ':' + minutes + ':' + seconds;
 }
 
+if (!(+localStorage.getItem(downTimerKey) > 0)) {
+  localStorage.setItem(downTimerKey, '' + 60);
+}
 
-let downStartTime = 60.0;
+let downStartTime = +localStorage.getItem(downTimerKey);
 let time;
 let state = 'paused';
 let timer;
@@ -210,6 +213,7 @@ function timeH(e) {
   let newTime = parseInput(v);
   if (!Number.isNaN(newTime)) {
     downStartTime = newTime;
+    localStorage.setItem(downTimerKey, newTime);
     reset();
   }
 }
